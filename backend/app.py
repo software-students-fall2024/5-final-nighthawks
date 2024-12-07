@@ -1,6 +1,6 @@
 import os
 import pymongo
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, request
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from calendar import Calendar, month_name
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
