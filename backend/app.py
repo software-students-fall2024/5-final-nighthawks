@@ -137,6 +137,26 @@ def logout():
     flash("Logged out successfully.")
     return redirect(url_for("index"))
 
+@app.route("/update-availability", methods=["GET", "POST"])
+def update_availability():
+    if "user" not in session:
+        flash("Please log in to update your availability.")
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        availability = request.form.getlist("availability")
+
+        # Update user availability in the database
+        db["users"].update_one(
+            {"username": session["user"]},
+            {"$set": {"availability": availability}}
+        )
+
+        flash("Availability updated successfully!")
+        return redirect(url_for("profile"))
+
+    # Render template for updating availability
+    return render_template("update_availability.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
