@@ -7,5 +7,12 @@
     <li>{{ session.course }}: {{ session.date }} at {{ session.time }} {{ session.timezone }}</li>
     {% endfor %}
 </ul>
+<h2>Your Availability</h2>
+<ul>
+    {% for slot in user.availability %}
+    <li>{{ slot.day }}: {{ slot.start_time }} to {{ slot.end_time }}</li>
+    {% endfor %}
+</ul>
+<a href="{{ url_for('update_availability') }}">Update Availability</a>
 <a href="{{ url_for('logout') }}">Logout</a>
 {% endblock %}
