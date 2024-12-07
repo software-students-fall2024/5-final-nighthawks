@@ -1,7 +1,8 @@
 import os
 import pymongo
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, request
 from calendar import Calendar, month_name
+from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 
 # Environment variable setup
@@ -87,9 +88,8 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        user = db["users"].find_one(
-            {"username": username, "password": password})
-        if user:
+        user = db["users"].find_one({"username": username})
+        if user and check_password_hash(user["password"], password):
             session["user"] = user["username"]
             flash("Login successful!")
             return redirect(url_for("index"))
@@ -110,8 +110,9 @@ def register():
             return redirect(url_for("register"))
 
         try:
+            hashed_password = generate_password_hash(password)
             db["users"].insert_one(
-                {"username": username, "password": password})
+                {"username": username, "password": hashed_password})
             flash("Registration successful! Please log in.")
             return redirect(url_for("login"))
         except Exception as e:
