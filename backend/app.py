@@ -5,6 +5,7 @@ from calendar import Calendar, month_name
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 from dotenv import load_dotenv
+from bson.objectid import ObjectId
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,6 +42,7 @@ def home():
     # else, have user log in
     return render_template('home.html')
 
+
 @app.route("/index")
 def index():
     if "user" not in session:
@@ -48,7 +50,6 @@ def index():
     return render_template("index.html", user=session["user"])
 
 
-@app.route("/calendar/<int:month>/<int:year>")
 @app.route("/calendar", defaults={"month": None, "year": None})
 def calendar_view(month=None, year=None):
     today = datetime.date.today()
@@ -62,6 +63,9 @@ def calendar_view(month=None, year=None):
     prev_year = year if month > 1 else year - 1
     next_year = year if month < 12 else year + 1
 
+    sessions = list(sessions_collection.find(
+        {"date": {"$regex": f"^{year}-{month:02}"}}))
+
     return render_template(
         "calendar.html",
         calendar_days=cal,
@@ -72,6 +76,7 @@ def calendar_view(month=None, year=None):
         prev_year=prev_year,
         next_month=next_month,
         next_year=next_year,
+        sessions=sessions,
     )
 
 
@@ -208,3 +213,39 @@ def update_availability():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+@app.route("/join-session/<session_id>", methods=["POST"])
+def join_session(session_id):
+    if "user" not in session:
+        flash("Please log in to join a session.")
+        return redirect(url_for("login"))
+
+    try:
+        sessions_collection.update_one(
+            {"_id": ObjectId(session_id)},
+            {"$addToSet": {"participants": session["user"]}}
+        )
+        flash("You have joined the session!")
+    except Exception as e:
+        flash(f"Error joining session: {e}")
+
+    return redirect(url_for("calendar_view"))
+
+
+@app.route("/leave-session/<session_id>", methods=["POST"])
+def leave_session(session_id):
+    if "user" not in session:
+        flash("Please log in to leave a session.")
+        return redirect(url_for("login"))
+
+    try:
+        sessions_collection.update_one(
+            {"_id": ObjectId(session_id)},
+            {"$pull": {"participants": session["user"]}}
+        )
+        flash("You have left the session.")
+    except Exception as e:
+        flash(f"Error leaving session: {e}")
+
+    return redirect(url_for("calendar_view"))

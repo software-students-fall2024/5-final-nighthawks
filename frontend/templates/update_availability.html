@@ -1,5 +1,9 @@
+{% extends "base.html" %}
+
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Update Availability</title>
@@ -26,22 +30,23 @@
         }
     </script>
 </head>
+
 <body>
     <h1>Update Your Availability</h1>
     <form action="{{ url_for('update_availability') }}" method="POST">
         <div id="time-slots-container">
             {% for slot in current_availability %}
-                <div>
-                    <select name="day[]">
-                        {% for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
-                        <option value="{{ day }}" {% if slot.day == day %}selected{% endif %}>{{ day }}</option>
-                        {% endfor %}
-                    </select>
-                    <input type="time" name="start_time[]" value="{{ slot.start_time }}" required>
-                    to
-                    <input type="time" name="end_time[]" value="{{ slot.end_time }}" required>
-                    <button type="button" onclick="this.parentNode.remove()">Remove</button>
-                </div>
+            <div>
+                <select name="day[]">
+                    {% for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
+                    <option value="{{ day }}" {% if slot.day==day %}selected{% endif %}>{{ day }}</option>
+                    {% endfor %}
+                </select>
+                <input type="time" name="start_time[]" value="{{ slot.start_time }}" required>
+                to
+                <input type="time" name="end_time[]" value="{{ slot.end_time }}" required>
+                <button type="button" onclick="this.parentNode.remove()">Remove</button>
+            </div>
             {% endfor %}
         </div>
         <button type="button" onclick="addTimeSlot()">Add Time Slot</button>
@@ -49,4 +54,5 @@
     </form>
     <a href="{{ url_for('profile') }}">Back to Profile</a>
 </body>
+
 </html>
