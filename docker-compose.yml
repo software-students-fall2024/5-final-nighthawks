@@ -1,24 +1,21 @@
-version: '3.8'
+version: "3.12.8"
 
 services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      FLASK_ENV: ${FLASK_ENV}
+      SECRET_KEY: ${SECRET_KEY}
     depends_on:
       - mongo
-    environment:
-      MONGO_URI: mongodb://mongo:27017/studySchedulerDB
 
   mongo:
     image: mongo:6.0
     container_name: mongodb
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
 

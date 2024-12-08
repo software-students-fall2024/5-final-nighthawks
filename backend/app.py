@@ -4,6 +4,10 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from calendar import Calendar, month_name
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Environment variable setup
 MONGO_URI = os.getenv("MONGO_URI")
@@ -19,7 +23,8 @@ except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, template_folder="../frontend/templates",
+            static_folder="../frontend/static")
 # Ensure to set a secure secret key
 app.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
 
@@ -127,7 +132,8 @@ def profile():
         return redirect(url_for("login"))
 
     user = db["users"].find_one({"username": session["user"]})
-    user_sessions = list(db["sessions"].find({"participants": session["user"]}))
+    user_sessions = list(db["sessions"].find(
+        {"participants": session["user"]}))
     user_availability = user.get("availability", [])
 
     return render_template(
@@ -145,6 +151,7 @@ def logout():
     session.pop("user", None)
     flash("Logged out successfully.")
     return redirect(url_for("index"))
+
 
 @app.route("/update-availability", methods=["GET", "POST"])
 def update_availability():
@@ -178,6 +185,7 @@ def update_availability():
 
     # Render template with current availability
     return render_template("update_availability.html", current_availability=current_availability)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
