@@ -1,11 +1,17 @@
 {% extends "base.html" %}
-
 {% block title %}Edit Session{% endblock %}
-
 {% block content %}
-{% if session_id %}
-<li><a href="{{ url_for('edit_session', session_id=session_id) }}">Edit Session</a></li>
-{% else %}
-<li><a href="#" onclick="alert('No session selected to edit!'); return false;">Edit Session</a></li>
-{% endif %}
-{% endblock %}
+<div class="container">
+    <h1>Edit Session</h1>
+    <form method="POST">
+        <div class="form-group"> <label for="course">Course</label> <input type="text" class="form-control" id="course"
+                name="course" value="{{ session.course }}" required> </div>
+        <div class="form-group"> <label for="date">Date</label> <input type="date" class="form-control" id="date"
+                name="date" value="{{ session.date }}" required> </div>
+        <div class="form-group"> <label for="time">Time</label> <input type="time" class="form-control" id="time"
+                name="time" value="{{ session.time }}" required> </div>
+        <div class="form-group"> <label for="timezone">Timezone</label> <input type="text" class="form-control"
+                id="timezone" name="timezone" value="{{ session.timezone }}" required> </div> <button type="submit"
+            class="btn btn-primary">Update Session</button>
+    </form>
+</div> {% endblock %}

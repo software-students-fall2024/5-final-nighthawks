@@ -193,51 +193,57 @@ def logout():
     return redirect(url_for("home"))
 
 
+@app.route("/edit-session", methods=["GET", "POST"])
 @app.route("/edit-session/<session_id>", methods=["GET", "POST"])
-def edit_session(session_id):
+def edit_session(session_id=None):
     if "user" not in session:
         flash("Please log in to edit a session.", "error")
         return redirect(url_for("login"))
 
-    try:
-        session_data = sessions_collection.find_one(
-            {"_id": ObjectId(session_id)})
-    except Exception as e:
-        flash(f"Error fetching session: {e}", "error")
-        return redirect(url_for("calendar_view"))
-
-    if not session_data:
-        flash("Session not found.", "error")
-        return redirect(url_for("calendar_view"))
-
-    if request.method == "POST":
-        updated_course = request.form.get("course")
-        updated_date = request.form.get("date")
-        updated_time = request.form.get("time")
-        updated_timezone = request.form.get("timezone")
-
-        # Validate inputs
-        if not updated_course or not updated_date or not updated_time or not updated_timezone:
-            flash("All fields are required to update the session.", "error")
-            return render_template("edit_session.html", session=session_data)
-
+    if session_id:
         try:
-            sessions_collection.update_one(
-                {"_id": ObjectId(session_id)},
-                {"$set": {
-                    "course": updated_course,
-                    "date": updated_date,
-                    "time": updated_time,
-                    "timezone": updated_timezone,
-                }}
-            )
-            flash("Session updated successfully!", "success")
-            return redirect(url_for("calendar_view"))
+            session_data = sessions_collection.find_one(
+                {"_id": ObjectId(session_id)})
         except Exception as e:
-            flash(f"Error updating session: {e}", "error")
+            flash(f"Error fetching session: {e}", "error")
+            return redirect(url_for("calendar_view"))
 
-    session_id = "session_id"
-    return render_template("base.html", session_id=session_id)
+        if not session_data:
+            flash("Session not found.", "error")
+            return redirect(url_for("calendar_view"))
+
+        if request.method == "POST":
+            updated_course = request.form.get("course")
+            updated_date = request.form.get("date")
+            updated_time = request.form.get("time")
+            updated_timezone = request.form.get("timezone")
+
+            # Validate inputs
+            if not updated_course or not updated_date or not updated_time or not updated_timezone:
+                flash("All fields are required to update the session.", "error")
+                return render_template("edit_session.html", session=session_data)
+
+            try:
+                sessions_collection.update_one(
+                    {"_id": ObjectId(session_id)},
+                    {"$set": {
+                        "course": updated_course,
+                        "date": updated_date,
+                        "time": updated_time,
+                        "timezone": updated_timezone,
+                    }}
+                )
+                flash("Session updated successfully!", "success")
+                return redirect(url_for("calendar_view"))
+            except Exception as e:
+                flash(f"Error updating session: {e}", "error")
+
+        return render_template("edit_session.html", session=session_data)
+
+    # If no session_id is provided, show a list of user's sessions to edit
+    user_sessions = list(sessions_collection.find(
+        {"participants": session["user"]}))
+    return render_template("edit_session_list.html", sessions=user_sessions)
 
 
 @app.route("/join-session/<session_id>", methods=["POST"])
