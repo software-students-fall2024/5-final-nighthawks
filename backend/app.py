@@ -41,9 +41,11 @@ def home():
     # else, have user log in
     return render_template('home.html')
 
-@app.route("/")
+@app.route("/index")
 def index():
-    return render_template("index.html")
+    if "user" not in session:
+        return redirect(url_for("home"))
+    return render_template("index.html", user=session["user"])
 
 
 @app.route("/calendar/<int:month>/<int:year>")
