@@ -126,9 +126,18 @@ def profile():
         flash("Please log in to access your profile.")
         return redirect(url_for("login"))
 
-    user = session["user"]
-    sessions = list(db["sessions"].find({"created_by": user}))
-    return render_template("profile.html", user=user, sessions=sessions)
+    user = db["users"].find_one({"username": session["user"]})
+    user_sessions = list(db["sessions"].find({"participants": session["user"]}))
+    user_availability = user.get("availability", [])
+
+    return render_template(
+        "profile.html",
+        user={
+            "username": user["username"],
+            "availability": user_availability,
+            "sessions": user_sessions,
+        }
+    )
 
 
 @app.route("/logout")
