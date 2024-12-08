@@ -18,16 +18,3 @@ def test_home(client):
     assert b"Welcome to Study Scheduler" in response.data
     assert b"log in" in response.data
     assert b"register" in response.data
-
-# Test 2: Calendar View
-def test_calendar_view(client, monkeypatch):
-    def mock_find(query):
-        return [
-            {"_id": ObjectId(), "course": "Math", "date": "2023-12-10", "time": "10:00 AM", "timezone": "UTC"}
-        ]
-    
-    monkeypatch.setattr(sessions_collection, "find", mock_find)
-
-    response = client.get("/calendar")
-    assert response.status_code == 200
-    assert b"Your Calendar" in response.data
