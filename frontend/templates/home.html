@@ -1,21 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Scheduler</title>
-</head>
-<body>
-    <h1>Study Scheduler</h1>
-    <p>Please log in or register to continue.</p>
-    
-    <div>
-        <a href="/login">
-            <button>Log In</button>
-        </a>
-        <a href="/register">
-            <button>Register</button>
-        </a>
-    </div>
+{% extends "base.html" %}
+{% block content %}
+
+<body class="home-page">
+    <h1>Welcome to Study Scheduler</h1>
+    <p>
+        Please <a href="{{ url_for('login') }}">log in</a> or
+        <a href="{{ url_for('register') }}">register</a> to continue.
+    </p>
 </body>
-</html>
+{% endblock %}

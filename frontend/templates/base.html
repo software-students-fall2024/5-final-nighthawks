@@ -11,10 +11,11 @@
 <body>
     <nav>
         <ul>
-            <li><a href="{{ url_for('index') }}">Home</a></li>
-            <li><a href="{{ url_for('calendar_view') }}">Calendar</a></li>
-            <li><a href="{{ url_for('create_session') }}">Create Session</a></li>
             {% if session.get('user') %}
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('create_session') }}">Create Session</a></li>
+            <li><a href="{{ url_for('calendar_view') }}">Calendar</a></li>
+            <li><a href="{{ url_for('update_availability') }}">Update Availability</a></li>
             <li><a href="{{ url_for('profile') }}">Profile</a></li>
             <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}

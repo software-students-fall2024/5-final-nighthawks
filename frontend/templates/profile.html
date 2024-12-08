@@ -3,7 +3,7 @@
 <h1>Welcome, {{ user.username }}</h1>
 <h2>Your Study Sessions</h2>
 <ul>
-    {% for session in user.sessions %}
+    {% for session in sessions %}
     <li>{{ session.course }}: {{ session.date }} at {{ session.time }} {{ session.timezone }}</li>
     {% endfor %}
 </ul>
@@ -13,6 +13,4 @@
     <li>{{ slot.day }}: {{ slot.start_time }} to {{ slot.end_time }}</li>
     {% endfor %}
 </ul>
-<a href="{{ url_for('update_availability') }}">Update Availability</a>
-<a href="{{ url_for('logout') }}">Logout</a>
 {% endblock %}
