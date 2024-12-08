@@ -61,39 +61,35 @@ def index():
     return render_template("index.html", user=session["user"])
 
 
-@app.route("/calendar", defaults={"month": None, "year": None})
-def calendar_view(month=None, year=None):
-    today = datetime.date.today()
-    month = month or today.month
-    year = year or today.year
+@app.route("/all-sessions", methods=["GET", "POST"])
+def all_sessions():
+    if "user" not in session:
+        flash("Please log in to view sessions.", "error")
+        return redirect(url_for("login"))
 
-    # Validate month and year inputs
-    if not (1 <= month <= 12):
-        flash("Invalid month.", "error")
+    try:
+        # Handle session creation if POST request
+        if request.method == "POST":
+            new_session = {
+                "course": request.form.get("course"),
+                "date": request.form.get("date"),
+                "time": request.form.get("time"),
+                "timezone": request.form.get("timezone"),
+                "user": session["user"],
+                "participants": []
+            }
+            sessions_collection.insert_one(new_session)
+            flash("New session created successfully!", "success")
+            return redirect(url_for("all_sessions"))
+
+        # Fetch all sessions
+        sessions = list(sessions_collection.find())
+        return render_template("all_sessions.html", sessions=sessions)
+
+    except Exception as e:
+        app.logger.error(f"All sessions error: {e}")
+        flash("An error occurred while loading sessions.", "error")
         return redirect(url_for("index"))
-
-    cal = Calendar().monthdayscalendar(year, month)
-    days_of_week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    prev_month = (month - 1) if month > 1 else 12
-    next_month = (month + 1) if month < 12 else 1
-    prev_year = year if month > 1 else year - 1
-    next_year = year if month < 12 else year + 1
-
-    sessions = list(sessions_collection.find(
-        {"date": {"$regex": f"^{year}-{month:02}"}}))
-
-    return render_template(
-        "calendar.html",
-        calendar_days=cal,
-        days_of_week=days_of_week,
-        month_name=month_name[month],
-        year=year,
-        prev_month=prev_month,
-        prev_year=prev_year,
-        next_month=next_month,
-        next_year=next_year,
-        sessions=sessions,
-    )
 
 
 @app.route("/create-session", methods=["GET", "POST"])
@@ -171,19 +167,17 @@ def profile():
         flash("Please log in to access your profile.", "error")
         return redirect(url_for("login"))
 
-    user = users_collection.find_one({"username": session["user"]})
-    user_sessions = list(sessions_collection.find(
-        {"participants": session["user"]}))
-    user_availability = user.get("availability", [])
+    try:
+        # Find sessions where the current user is a participant
+        joined_sessions = list(sessions_collection.find(
+            {"participants": session["user"]}
+        ))
+        return render_template("profile.html", joined_sessions=joined_sessions)
 
-    return render_template(
-        "profile.html",
-        user={
-            "username": user["username"],
-            "availability": user_availability,
-            "sessions": user_sessions,
-        }
-    )
+    except Exception as e:
+        app.logger.error(f"Profile page error: {e}")
+        flash("An error occurred while loading your profile.", "error")
+        return redirect(url_for("index"))
 
 
 @app.route("/logout")
@@ -200,50 +194,53 @@ def edit_session(session_id=None):
         flash("Please log in to edit a session.", "error")
         return redirect(url_for("login"))
 
-    if session_id:
-        try:
-            session_data = sessions_collection.find_one(
-                {"_id": ObjectId(session_id)})
-        except Exception as e:
-            flash(f"Error fetching session: {e}", "error")
-            return redirect(url_for("calendar_view"))
-
-        if not session_data:
-            flash("Session not found.", "error")
-            return redirect(url_for("calendar_view"))
-
-        if request.method == "POST":
-            updated_course = request.form.get("course")
-            updated_date = request.form.get("date")
-            updated_time = request.form.get("time")
-            updated_timezone = request.form.get("timezone")
-
-            # Validate inputs
-            if not updated_course or not updated_date or not updated_time or not updated_timezone:
-                flash("All fields are required to update the session.", "error")
-                return render_template("edit_session.html", session=session_data)
-
+    try:
+        if session_id:
+            # Validate ObjectId
             try:
-                sessions_collection.update_one(
-                    {"_id": ObjectId(session_id)},
-                    {"$set": {
-                        "course": updated_course,
-                        "date": updated_date,
-                        "time": updated_time,
-                        "timezone": updated_timezone,
-                    }}
-                )
-                flash("Session updated successfully!", "success")
+                object_id = ObjectId(session_id)
+            except (InvalidId, TypeError):
+                flash("Invalid session ID.", "error")
                 return redirect(url_for("calendar_view"))
-            except Exception as e:
-                flash(f"Error updating session: {e}", "error")
 
-        return render_template("edit_session.html", session=session_data)
+            session_data = sessions_collection.find_one({"_id": object_id})
 
-    # If no session_id is provided, show a list of user's sessions to edit
-    user_sessions = list(sessions_collection.find(
-        {"participants": session["user"]}))
-    return render_template("edit_session_list.html", sessions=user_sessions)
+            if not session_data:
+                flash("Session not found.", "error")
+                return redirect(url_for("calendar_view"))
+
+            # Ensure the user has permission to edit
+            # You might want to add a check here to ensure only the session creator can edit
+            if request.method == "POST":
+                # Existing update logic
+                try:
+                    sessions_collection.update_one(
+                        {"_id": object_id},
+                        {"$set": {
+                            "course": request.form.get("course"),
+                            "date": request.form.get("date"),
+                            "time": request.form.get("time"),
+                            "timezone": request.form.get("timezone"),
+                        }}
+                    )
+                    flash("Session updated successfully!", "success")
+                    return redirect(url_for("calendar_view"))
+                except Exception as e:
+                    app.logger.error(f"Session update error: {e}")
+                    flash("An error occurred while updating the session.", "error")
+
+            return render_template("edit_session.html", session=session_data)
+
+        # If no session_id, show list of user's sessions
+        user_sessions = list(sessions_collection.find(
+            {"participants": session["user"]}
+        ))
+        return render_template("edit_session_list.html", sessions=user_sessions)
+
+    except Exception as e:
+        app.logger.error(f"Edit session error: {e}")
+        flash("An unexpected error occurred.", "error")
+        return redirect(url_for("index"))
 
 
 @app.route("/join-session/<session_id>", methods=["POST"])
@@ -253,15 +250,26 @@ def join_session(session_id):
         return redirect(url_for("login"))
 
     try:
-        sessions_collection.update_one(
-            {"_id": ObjectId(session_id)},
+        # Convert session_id to ObjectId
+        object_id = ObjectId(session_id)
+
+        # Add user to session participants
+        result = sessions_collection.update_one(
+            {"_id": object_id},
             {"$addToSet": {"participants": session["user"]}}
         )
-        flash("You have joined the session!", "success")
-    except Exception as e:
-        flash(f"Error joining session: {e}", "error")
 
-    return redirect(url_for("calendar_view"))
+        if result.modified_count:
+            flash("You have joined the session!", "success")
+        else:
+            flash("Could not join the session.", "error")
+
+        return redirect(url_for("all_sessions"))
+
+    except Exception as e:
+        app.logger.error(f"Join session error: {e}")
+        flash("An error occurred while joining the session.", "error")
+        return redirect(url_for("all_sessions"))
 
 
 @app.route("/leave-session/<session_id>", methods=["POST"])
@@ -271,15 +279,26 @@ def leave_session(session_id):
         return redirect(url_for("login"))
 
     try:
-        sessions_collection.update_one(
-            {"_id": ObjectId(session_id)},
+        # Convert session_id to ObjectId
+        object_id = ObjectId(session_id)
+
+        # Remove user from session participants
+        result = sessions_collection.update_one(
+            {"_id": object_id},
             {"$pull": {"participants": session["user"]}}
         )
-        flash("You have left the session.", "success")
-    except Exception as e:
-        flash(f"Error leaving session: {e}", "error")
 
-    return redirect(url_for("calendar_view"))
+        if result.modified_count:
+            flash("You have left the session.", "success")
+        else:
+            flash("Could not leave the session.", "error")
+
+        return redirect(url_for("all_sessions"))
+
+    except Exception as e:
+        app.logger.error(f"Leave session error: {e}")
+        flash("An error occurred while leaving the session.", "error")
+        return redirect(url_for("all_sessions"))
 
 
 if __name__ == "__main__":

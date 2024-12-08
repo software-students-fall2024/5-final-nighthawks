@@ -14,8 +14,7 @@
             {% if session.get('user') %}
             <li><a href="{{ url_for('index') }}">Home</a></li>
             <li><a href="{{ url_for('create_session') }}">Create Session</a></li>
-            <li><a href="{{ url_for('calendar_view') }}">Calendar</a></li>
-            <li><a href="{{ url_for('edit_session') }}">Edit Session</a></li>
+            <li><a href="{{ url_for('all_sessions') }}">All Sessions</a></li>
             <li><a href="{{ url_for('profile') }}">Profile</a></li>
             <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
