@@ -45,8 +45,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run Unit Tests
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        run: pytest backend/tests
+       - name: Run Unit Tests
+         env:
+           MONGO_URI: ${{ secrets.MONGO_URI }}
+           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+           PYTHONPATH: ./backend 
+         run: pytest backend/tests

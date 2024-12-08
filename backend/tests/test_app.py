@@ -1,5 +1,5 @@
 import pytest
-from app import app, db
+from backend.app import app, db
 from werkzeug.security import generate_password_hash
 from bson.objectid import ObjectId
 
