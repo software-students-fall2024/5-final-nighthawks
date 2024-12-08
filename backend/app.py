@@ -39,7 +39,7 @@ def home():
     if 'user' in session:
         return redirect(url_for('index'))
     # else, have user log in
-    return render_template('login.html')
+    return render_template('home.html')
 
 @app.route("/")
 def index():
