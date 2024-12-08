@@ -18,6 +18,10 @@ if not MONGO_URI:
 try:
     client = pymongo.MongoClient(MONGO_URI)
     db = client["studySchedulerDB"]
+
+    users_collection = db["users"]
+    sessions_collection = db["sessions"]
+
     print("MongoDB connection successful")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
@@ -28,6 +32,14 @@ app = Flask(__name__, template_folder="../frontend/templates",
 # Ensure to set a secure secret key
 app.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
 
+
+@app.route('/')
+def home():
+    # If user is logged in, redirect to the index
+    if 'user' in session:
+        return redirect(url_for('index'))
+    # else, have user log in
+    return render_template('login.html')
 
 @app.route("/")
 def index():
@@ -77,7 +89,7 @@ def create_session():
         }
 
         try:
-            db["sessions"].insert_one(session_data)
+            sessions_collection.insert_one(session_data)
             flash("Study session created successfully!")
         except Exception as e:
             flash(f"Error creating session: {e}")
@@ -93,7 +105,7 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        user = db["users"].find_one({"username": username})
+        user = users_collection.find_one({"username": username})
         if user and check_password_hash(user["password"], password):
             session["user"] = user["username"]
             flash("Login successful!")
@@ -110,13 +122,18 @@ def register():
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
 
+        # Check if username already exists
+        if users_collection.find_one({'username': username}):
+            flash("User already exists!")
+            return redirect(url_for("register"))
+
         if password != confirm_password:
             flash("Passwords do not match.")
             return redirect(url_for("register"))
 
         try:
             hashed_password = generate_password_hash(password)
-            db["users"].insert_one(
+            users_collection.insert_one(
                 {"username": username, "password": hashed_password})
             flash("Registration successful! Please log in.")
             return redirect(url_for("login"))
@@ -131,8 +148,8 @@ def profile():
         flash("Please log in to access your profile.")
         return redirect(url_for("login"))
 
-    user = db["users"].find_one({"username": session["user"]})
-    user_sessions = list(db["sessions"].find(
+    user = users_collection.find_one({"username": session["user"]})
+    user_sessions = list(sessions_collection.find(
         {"participants": session["user"]}))
     user_availability = user.get("availability", [])
 
@@ -150,7 +167,7 @@ def profile():
 def logout():
     session.pop("user", None)
     flash("Logged out successfully.")
-    return redirect(url_for("index"))
+    return redirect(url_for("home"))
 
 
 @app.route("/update-availability", methods=["GET", "POST"])
@@ -171,7 +188,7 @@ def update_availability():
         ]
 
         # Update user availability in database
-        db["users"].update_one(
+        users_collection.update_one(
             {"username": session["user"]},  # Match the logged-in user
             {"$set": {"availability": availability}}
         )
@@ -180,7 +197,7 @@ def update_availability():
         return redirect(url_for("profile"))
 
     # Get current availability for user
-    user = db["users"].find_one({"username": session["user"]})
+    user = users_collection.find_one({"username": session["user"]})
     current_availability = user.get("availability", [])
 
     # Render template with current availability
