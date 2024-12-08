@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Session{% endblock %}
+
+{% block content %}
+{% if session_id %}
+<li><a href="{{ url_for('edit_session', session_id=session_id) }}">Edit Session</a></li>
+{% else %}
+<li><a href="#" onclick="alert('No session selected to edit!'); return false;">Edit Session</a></li>
+{% endif %}
+{% endblock %}

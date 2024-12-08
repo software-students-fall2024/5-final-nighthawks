@@ -1,16 +1,20 @@
 {% extends "base.html" %}
+
+{% block title %}My Sessions{% endblock %}
+
 {% block content %}
-<h1>Welcome, {{ user.username }}</h1>
-<h2>Your Study Sessions</h2>
+<h1>My Joined Study Sessions</h1>
 <ul>
-    {% for session in sessions %}
-    <li>{{ session.course }}: {{ session.date }} at {{ session.time }} {{ session.timezone }}</li>
+    {% if joined_sessions %}
+    {% for session in joined_sessions %}
+    <li>
+        <strong>{{ session.course }}</strong>:
+        {{ session.date }} at {{ session.time }} {{ session.timezone }}
+    </li>
     {% endfor %}
+    {% else %}
+    <p>You haven't joined any sessions yet.</p>
+    {% endif %}
 </ul>
-<h2>Your Availability</h2>
-<ul>
-    {% for slot in user.availability %}
-    <li>{{ slot.day }}: {{ slot.start_time }} to {{ slot.end_time }}</li>
-    {% endfor %}
-</ul>
+<a href="{{ url_for('calendar') }}" class="nav-button">View All Sessions</a>
 {% endblock %}

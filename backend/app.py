@@ -1,6 +1,9 @@
 import os
 import pymongo
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    session, flash, jsonify
+)
 from calendar import Calendar, month_name
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
@@ -12,8 +15,11 @@ load_dotenv()
 
 # Environment variable setup
 MONGO_URI = os.getenv("MONGO_URI")
+SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
 if not MONGO_URI:
     raise ValueError("MONGO_URI environment variable is required")
+if SECRET_KEY == "your_secret_key":
+    raise ValueError("SECRET_KEY is not set. Please set it in your .env file.")
 
 # MongoDB connection
 try:
@@ -26,20 +32,25 @@ try:
     print("MongoDB connection successful")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
+    raise
 
 # Initialize Flask app
 app = Flask(__name__, template_folder="../frontend/templates",
             static_folder="../frontend/static")
-# Ensure to set a secure secret key
-app.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
+app.secret_key = SECRET_KEY
+
+# Enable secure cookie settings
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,  # Set to False for local development without HTTPS
+    SESSION_PERMANENT=False
+)
 
 
 @app.route('/')
 def home():
-    # If user is logged in, redirect to the index
     if 'user' in session:
         return redirect(url_for('index'))
-    # else, have user log in
     return render_template('home.html')
 
 
@@ -55,6 +66,11 @@ def calendar_view(month=None, year=None):
     today = datetime.date.today()
     month = month or today.month
     year = year or today.year
+
+    # Validate month and year inputs
+    if not (1 <= month <= 12):
+        flash("Invalid month.", "error")
+        return redirect(url_for("index"))
 
     cal = Calendar().monthdayscalendar(year, month)
     days_of_week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -93,13 +109,14 @@ def create_session():
             "date": date,
             "time": time,
             "timezone": timezone,
+            "participants": []
         }
 
         try:
             sessions_collection.insert_one(session_data)
-            flash("Study session created successfully!")
+            flash("Study session created successfully!", "success")
         except Exception as e:
-            flash(f"Error creating session: {e}")
+            flash(f"Error creating session: {e}", "error")
 
         return redirect(url_for("calendar_view"))
 
@@ -115,10 +132,10 @@ def login():
         user = users_collection.find_one({"username": username})
         if user and check_password_hash(user["password"], password):
             session["user"] = user["username"]
-            flash("Login successful!")
+            flash("Login successful!", "success")
             return redirect(url_for("index"))
         else:
-            flash("Invalid username or password.")
+            flash("Invalid username or password.", "error")
     return render_template("login.html")
 
 
@@ -129,30 +146,29 @@ def register():
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
 
-        # Check if username already exists
         if users_collection.find_one({'username': username}):
-            flash("User already exists!")
+            flash("User already exists!", "error")
             return redirect(url_for("register"))
 
         if password != confirm_password:
-            flash("Passwords do not match.")
+            flash("Passwords do not match.", "error")
             return redirect(url_for("register"))
 
         try:
             hashed_password = generate_password_hash(password)
             users_collection.insert_one(
                 {"username": username, "password": hashed_password})
-            flash("Registration successful! Please log in.")
+            flash("Registration successful! Please log in.", "success")
             return redirect(url_for("login"))
         except Exception as e:
-            flash(f"Error during registration: {e}")
+            flash(f"Error during registration: {e}", "error")
     return render_template("register.html")
 
 
 @app.route("/profile")
 def profile():
     if "user" not in session:
-        flash("Please log in to access your profile.")
+        flash("Please log in to access your profile.", "error")
         return redirect(url_for("login"))
 
     user = users_collection.find_one({"username": session["user"]})
@@ -173,52 +189,61 @@ def profile():
 @app.route("/logout")
 def logout():
     session.pop("user", None)
-    flash("Logged out successfully.")
+    flash("Logged out successfully.", "success")
     return redirect(url_for("home"))
 
 
-@app.route("/update-availability", methods=["GET", "POST"])
-def update_availability():
+@app.route("/edit-session/<session_id>", methods=["GET", "POST"])
+def edit_session(session_id):
     if "user" not in session:
-        flash("Please log in to update your availability.")
+        flash("Please log in to edit a session.", "error")
         return redirect(url_for("login"))
 
+    try:
+        session_data = sessions_collection.find_one(
+            {"_id": ObjectId(session_id)})
+    except Exception as e:
+        flash(f"Error fetching session: {e}", "error")
+        return redirect(url_for("calendar_view"))
+
+    if not session_data:
+        flash("Session not found.", "error")
+        return redirect(url_for("calendar_view"))
+
     if request.method == "POST":
-        # Extract data from the form
-        days = request.form.getlist("day[]")
-        start_times = request.form.getlist("start_time[]")
-        end_times = request.form.getlist("end_time[]")
+        updated_course = request.form.get("course")
+        updated_date = request.form.get("date")
+        updated_time = request.form.get("time")
+        updated_timezone = request.form.get("timezone")
 
-        availability = [
-            {"day": day, "start_time": start, "end_time": end}
-            for day, start, end in zip(days, start_times, end_times)
-        ]
+        # Validate inputs
+        if not updated_course or not updated_date or not updated_time or not updated_timezone:
+            flash("All fields are required to update the session.", "error")
+            return render_template("edit_session.html", session=session_data)
 
-        # Update user availability in database
-        users_collection.update_one(
-            {"username": session["user"]},  # Match the logged-in user
-            {"$set": {"availability": availability}}
-        )
+        try:
+            sessions_collection.update_one(
+                {"_id": ObjectId(session_id)},
+                {"$set": {
+                    "course": updated_course,
+                    "date": updated_date,
+                    "time": updated_time,
+                    "timezone": updated_timezone,
+                }}
+            )
+            flash("Session updated successfully!", "success")
+            return redirect(url_for("calendar_view"))
+        except Exception as e:
+            flash(f"Error updating session: {e}", "error")
 
-        flash("Availability updated successfully!")
-        return redirect(url_for("profile"))
-
-    # Get current availability for user
-    user = users_collection.find_one({"username": session["user"]})
-    current_availability = user.get("availability", [])
-
-    # Render template with current availability
-    return render_template("update_availability.html", current_availability=current_availability)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    session_id = "session_id"
+    return render_template("base.html", session_id=session_id)
 
 
 @app.route("/join-session/<session_id>", methods=["POST"])
 def join_session(session_id):
     if "user" not in session:
-        flash("Please log in to join a session.")
+        flash("Please log in to join a session.", "error")
         return redirect(url_for("login"))
 
     try:
@@ -226,9 +251,9 @@ def join_session(session_id):
             {"_id": ObjectId(session_id)},
             {"$addToSet": {"participants": session["user"]}}
         )
-        flash("You have joined the session!")
+        flash("You have joined the session!", "success")
     except Exception as e:
-        flash(f"Error joining session: {e}")
+        flash(f"Error joining session: {e}", "error")
 
     return redirect(url_for("calendar_view"))
 
@@ -236,7 +261,7 @@ def join_session(session_id):
 @app.route("/leave-session/<session_id>", methods=["POST"])
 def leave_session(session_id):
     if "user" not in session:
-        flash("Please log in to leave a session.")
+        flash("Please log in to leave a session.", "error")
         return redirect(url_for("login"))
 
     try:
@@ -244,8 +269,12 @@ def leave_session(session_id):
             {"_id": ObjectId(session_id)},
             {"$pull": {"participants": session["user"]}}
         )
-        flash("You have left the session.")
+        flash("You have left the session.", "success")
     except Exception as e:
-        flash(f"Error leaving session: {e}")
+        flash(f"Error leaving session: {e}", "error")
 
     return redirect(url_for("calendar_view"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
