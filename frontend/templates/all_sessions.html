@@ -4,9 +4,7 @@
 <div class="container">
     <h1>All Study Sessions</h1>
 
-    <!-- List of All Sessions -->
-    <h2>Available Sessions</h2>
-    {% if sessions %}
+    {% if sessions and sessions|length > 0 %}
     <div class="session-list">
         {% for session in sessions %}
         <div class="session-card">
@@ -25,15 +23,13 @@
             </form>
             {% endif %}
 
-            <!-- Edit Session (only for session creator) -->
-            {% if session['user'] == session['user'] %}
+            <!-- Edit Session (available to all users) -->
             <a href="{{ url_for('edit_session', session_id=session['_id']) }}" class="btn btn-secondary">Edit</a>
-            {% endif %}
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <p>No sessions available.</p>
+    <p>No sessions available. <a href="{{ url_for('create_session') }}">Create a session</a> to get started!</p>
     {% endif %}
 </div>
 {% endblock %}

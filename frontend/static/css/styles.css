@@ -45,34 +45,6 @@ main {
     padding: 2rem;
 }
 
-.calendar-section {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-}
-
-.calendar-section h2 {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.calendar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 1rem;
-}
-
 .nav-button {
     background-color: #4CAF50;
     color: white;
@@ -84,13 +56,6 @@ main {
 
 .nav-button:hover {
     background-color: #45a049;
-}
-
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.5rem;
-    text-align: center;
 }
 
 .day {
@@ -136,8 +101,11 @@ nav ul li a:hover {
     border-radius: 5px;
 }
 
-.flash-messages {
-    color: red;
-    list-style: none;
-    padding: 0;
+.content-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
