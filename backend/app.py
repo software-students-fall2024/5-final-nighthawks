@@ -101,7 +101,7 @@ def create_session():
         except Exception as e:
             flash(f"Error creating session: {e}", "error")
 
-        return redirect(url_for("calendar_view"))
+        return redirect(url_for("all_sessions"))
 
     return render_template("create_session.html")
 
