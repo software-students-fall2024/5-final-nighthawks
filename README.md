@@ -9,8 +9,7 @@ The **Study Scheduler** is a web-based application designed to help users organi
 
 ## DockerHub Container Images
 
-- **Backend**: [Study Scheduler Backend](https://hub.docker.com/r/yourusername/study-scheduler-backend)
-- **Frontend**: [Study Scheduler Frontend](https://hub.docker.com/r/yourusername/study-scheduler-frontend)
+- [Study Scheduler](https://hub.docker.com/r/jwhit0/5-final-nighthawks)
 
 ## Setup Instructions
 
