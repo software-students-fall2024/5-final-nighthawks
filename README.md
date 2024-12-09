@@ -54,8 +54,7 @@ docker-compose up --build
 4. **Access the Application**
 Once the containers are running:
 
-The backend will be accessible at http://localhost:5000
-The frontend will be accessible at http://localhost:8000
+The app will be accessible at http://localhost:8000
 
 5. **Shut Down the Application**
 To stop the application, run:
