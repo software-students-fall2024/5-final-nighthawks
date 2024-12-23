@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 8000
 
 # Start the application
-CMD ["flask", "run", "--host=0.0.0.0", "--port=8000"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "backend.app:app"]
