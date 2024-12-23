@@ -63,6 +63,9 @@ To stop the application, run:
 docker-compose down
 ```
 
+[Visit the App](https://stingray-app-36zvb.ondigitalocean.app/)
+
+
 ## TEAM MEMBERS
 
 - [Tahsin Tawhid](https://github.com/tahsintawhid)
